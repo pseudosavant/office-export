@@ -1,0 +1,14 @@
+.pytest_cache/
+.pytest-tmp/
+.pytest-office*/
+.ruff_cache/
+.venv/
+.wheel-smoke/
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+*.pdf
+*- PNG export/
+*- JPEG export/
