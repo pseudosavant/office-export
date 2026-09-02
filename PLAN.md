@@ -1,5 +1,7 @@
 # Office Export
 
+The first public testing release is `0.1.0`. The `1.0.0` references below describe the intended stable-release contract. That stable release will follow usage and compatibility testing.
+
 ## Project summary
 
 `office-export` is a Windows-first Python CLI for exporting Microsoft Office documents through the installed desktop Office applications.

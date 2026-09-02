@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 0.1.0
 
 - Export Word, Excel, and PowerPoint documents through desktop Microsoft Office on Windows.
 - Produce native PDF output plus PNG and JPEG images rendered through PDFium.

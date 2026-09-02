@@ -627,7 +627,7 @@ def _validate_options(application: str, options: ExportOptions) -> None:
         raise UsageError("--background applies only to JPEG output.")
     if application == "pdf":
         if options.output_format == "pdf":
-            raise UsageError("PDF-to-PDF rewriting is not supported in version 1.0.0.")
+            raise UsageError("PDF-to-PDF rewriting is not supported in version 0.1.0.")
         _reject_app_options(options, allowed={"pages", "exclude_annotations"}, application="PDF input")
     elif application == "word":
         _reject_app_options(
