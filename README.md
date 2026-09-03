@@ -1,42 +1,61 @@
 # office-export
 
-`office-export` is a Windows-first Python CLI that exports Word, Excel, and PowerPoint documents through the installed desktop Microsoft Office applications. It creates native PDFs and consistent PNG or JPEG images. It can also rasterize PDF inputs without Office.
+`office-export` exports Word, Excel, and PowerPoint documents to PDF, PNG, or JPEG through the installed desktop Microsoft Office applications. It also renders PDF pages to PNG or JPEG without requiring Office.
 
-The core promise is faithful local rendering through the same Office applications that users rely on in the desktop UI. The CLI is designed for people, scripts, and coding agents.
+It is a predictable CLI for faithful local rendering by people, scripts, and coding agents. Office source files are opened read-only, macros remain disabled, and source changes are never saved.
 
-## Requirements
+## Prerequisite
 
-Office document export supports:
+`office-export` is designed to be used with [`uv`](https://docs.astral.sh/uv/getting-started/installation/). Install `uv` before continuing. The documented workflows and managed agent skill use `uvx` to run the tool without requiring a global installation.
 
-- Windows 11
-- Microsoft 365 Apps desktop applications
-- Office 2024 and Office LTSC 2024
-- CPython 3.11 or newer
-- `uv` and `uvx`
+## Quick start with an agent
 
-Office LTSC 2021 and older desktop releases are best effort. The CLI probes capabilities instead of rejecting an application only because of its version number.
-
-Direct PDF rasterization works on any supported Python platform that has a compatible `pypdfium2` wheel. Word, Excel, and PowerPoint are not required for PDF input.
-
-This tool is intended for an interactive Windows user profile. It is not a server-side Office conversion service. First-run setup, modal dialogs, add-ins, Protected View, or an uninitialized Office license can block automation.
-
-## Install and run
-
-Run the published package without a permanent installation:
+Install the managed agent skill:
 
 ```powershell
-uvx office-export --version
+uvx office-export skill install
+```
+
+Then use `$office-export` in Codex, Claude Code, or another agent harness that supports skills:
+
+> Use $office-export to export this presentation as PNG images, inspect the rendered slides, and report any visual problems.
+
+The skill teaches the agent how to inspect Office and PDF files, choose safe export options, render the requested outputs, and review the results.
+
+## What it exports
+
+| Input | Outputs | Select content by | Required renderer |
+| --- | --- | --- | --- |
+| Word | PDF, PNG, JPEG | Pages | Desktop Word |
+| PowerPoint | PDF, PNG, JPEG | Slides | Desktop PowerPoint |
+| Excel | PDF, PNG, JPEG | Sheets, ranges, charts | Desktop Excel |
+| PDF | PNG, JPEG | Pages | Bundled PDFium dependency |
+
+Office inputs use the corresponding installed desktop application to preserve native layout and rendering. PDF input does not require Word, Excel, or PowerPoint.
+
+## Use the CLI directly
+
+Export a document without installing the package globally:
+
+```powershell
+uvx office-export report.docx --to pdf
+```
+
+The PDF is written beside the source as `report.pdf`. Check whether Office applications and supporting dependencies are ready with:
+
+```powershell
 uvx office-export doctor
 ```
 
-Run a local checkout during development:
+To install the command as a persistent tool instead:
 
 ```powershell
-$env:UV_LINK_MODE="copy"
-uvx --refresh --from . office-export --version
+uv tool install office-export
 ```
 
-## Export documents
+The examples below continue to use `uvx office-export` so they work without a global installation.
+
+## Common recipes
 
 ```powershell
 uvx office-export report.docx --to pdf
@@ -47,9 +66,11 @@ uvx office-export model.xlsx --to png --range "Summary!A1:H40"
 uvx office-export document.pdf --to jpeg --pages 1,3-5 --dpi 300
 ```
 
-Use `--output PATH` to override the destination. Use `--force` to replace only the output files planned for the current conversion.
+## Output locations and overwrite safety
 
-### Default output names
+Use `--output PATH` to choose a different destination. Existing output is never replaced unless `--force` is supplied. The force option replaces only the files planned for the current conversion.
+
+Default destinations are:
 
 - PDF is written beside the input as `<name>.pdf`.
 - PNG files are written to `<name> - PNG export`.
@@ -65,6 +86,28 @@ model-sheet-summary-chart-revenue.png
 ```
 
 Image output always uses a directory by default. An explicit image filename is accepted when the selection produces exactly one image.
+
+## Requirements
+
+Office document export supports:
+
+- Windows 11
+- Microsoft 365 Apps desktop applications
+- Office 2024 and Office LTSC 2024
+- CPython 3.11 or newer
+- `uv` and `uvx`
+
+Office LTSC 2021 and older desktop releases are best effort. The CLI probes capabilities instead of rejecting an application only because of its version number.
+
+Direct PDF rasterization works on any supported Python platform that has a compatible `pypdfium2` wheel. Word, Excel, and PowerPoint are not required for PDF input.
+
+Office automation requires an interactive Windows user profile. It is not a server-side conversion service. First-run setup, modal dialogs, add-ins, Protected View, or an uninitialized Office license can block automation.
+
+## How rendering works
+
+Word, Excel, and PowerPoint create native PDFs through their desktop export APIs. When PNG or JPEG is requested, the default image engine rasterizes that Office-created PDF with PDFium for consistent DPI, encoding, annotations, and selection behavior.
+
+PowerPoint can optionally use its native slide-image exporter. Excel chart selection uses native chart export to create a tightly bounded image. PDF inputs go directly to PDFium and never launch an Office application.
 
 ## Word
 
@@ -133,7 +176,9 @@ Defaults:
 
 Use `--max-megapixels` only after reviewing the memory cost of the requested page size and DPI.
 
-## Inspect and diagnose
+## Inspect and troubleshoot
+
+Inspect a source before exporting when a script or agent needs to discover its pages, slides, sheets, ranges, charts, or other metadata. Use `doctor` to diagnose the local Office and PDFium environment.
 
 ```powershell
 uvx office-export inspect report.docx --json
@@ -149,7 +194,9 @@ uvx office-export formats --json
 
 Smoke exports are opt-in. Supply one or more known local fixtures with `--smoke-word`, `--smoke-excel`, or `--smoke-powerpoint`.
 
-## JSON and manifests
+## Automation and batch conversion
+
+### Structured results and manifests
 
 Add `--json` to print a stable result object to stdout. Diagnostics stay on stderr. A successful conversion includes:
 
@@ -165,7 +212,7 @@ Add `--json` to print a stable result object to stdout. Diagnostics stay on stde
 
 Use `--manifest PATH` to persist the same result. Failed conversions also write a structured failure manifest when the requested manifest path is safe and writable. No sidecar manifest is created by default.
 
-## Batch conversion
+### Batch conversion
 
 ```powershell
 uvx office-export batch .\incoming --to pdf
@@ -174,13 +221,13 @@ uvx office-export batch .\incoming --to png --recursive --continue-on-error --js
 
 Batch conversion currently processes files sequentially and accepts only `--jobs 1`. Each Office source gets a fresh worker process and an isolated temporary directory.
 
-## Agent skill
+## Manage the agent skill
 
-Install the bundled managed skill:
+Inspect, update, restore, install to a custom location, or remove the bundled managed skill:
 
 ```powershell
-uvx office-export skill install
 uvx office-export skill status --json
+uvx office-export skill install
 uvx office-export skill install --force
 uvx office-export skill install --skills-dir C:\custom\skills
 uvx office-export skill remove
@@ -214,6 +261,39 @@ Updates affect future agent skill loading. They may not change instructions alre
 
 Office automation is not a security sandbox. Do not use it to open untrusted documents outside the protections of your Windows and Office environment.
 
+## Known native limitations
+
+- Office rendering can vary with Office updates, installed fonts, document compatibility settings, and printer metrics.
+- Excel internal workbook links can be lost in native PDF output.
+- PowerPoint-native images can differ slightly from PDFium images.
+- Dynamic XFA forms may not match a full PDF viewer.
+- Modal Office dialogs and add-ins can still interfere with automation.
+
+## Reference
+
+Useful discovery and metadata commands:
+
+```powershell
+uvx office-export --help
+uvx office-export --version
+uvx office-export formats
+uvx office-export inspect report.docx
+uvx office-export doctor
+```
+
+Exit codes:
+
+| Code | Meaning |
+| ---: | --- |
+| `0` | Success |
+| `2` | Usage or selection error |
+| `3` | Input error |
+| `4` | Required capability is unavailable |
+| `5` | Security restriction |
+| `6` | Conversion error |
+| `7` | Office worker timeout |
+| `8` | Unexpected internal error |
+
 ## Development
 
 ```powershell
@@ -228,14 +308,6 @@ uv run twine check dist/*
 ```
 
 The default test run is cross-platform and excludes tests that require licensed desktop Office. Run the `office` marker in an interactive Windows session before release.
-
-## Known native limitations
-
-- Office rendering can vary with Office updates, installed fonts, document compatibility settings, and printer metrics.
-- Excel internal workbook links can be lost in native PDF output.
-- PowerPoint-native images can differ slightly from PDFium images.
-- Dynamic XFA forms may not match a full PDF viewer.
-- Modal Office dialogs and add-ins can still interfere with automation.
 
 ## License
 
