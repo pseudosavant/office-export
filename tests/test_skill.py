@@ -73,6 +73,9 @@ def test_skill_guards_unmanaged_content_and_force_is_explicit(tmp_path: Path) ->
 
     with pytest.raises(UsageError, match="unmanaged"):
         install_skill(root)
+    with pytest.raises(UsageError, match="unmanaged"):
+        install_skill(root, force=True)
+    skill_file.write_text("<!-- managed-by: office-export -->\n", encoding="utf-8")
     install_skill(root, force=True)
     (target / "notes.txt").write_text("keep", encoding="utf-8")
     with pytest.raises(UsageError, match="unmanaged entries"):

@@ -12,14 +12,15 @@ def test_package_metadata_is_consistent() -> None:
     project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
 
     assert project["name"] == "office-export"
-    assert project["version"] == __version__ == "0.1.1"
+    assert project["version"] == __version__ == "0.2.0"
     assert project["scripts"]["office-export"] == "office_export.cli:main"
     assert project["license"] == "MIT"
 
 
 def test_embedded_skill_identity_and_invocations() -> None:
     assert SKILL_NAME == "office-export"
-    assert MANAGED_MARKER in SKILL_MD
+    assert MANAGED_MARKER not in SKILL_MD
+    assert "managed-by: office-export" in SKILL_MD
     assert SKILL_MD.startswith("---\nname: office-export\n")
     command_lines = [
         line.strip()

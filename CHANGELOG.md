@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Synchronize older pristine managed skills locally during normal CLI invocations, including help and version output.
+- Store the CLI version and normalized content hash in `SKILL.md` front matter. Migrate legacy managed skills and recover missing or invalid version metadata.
+- Preserve edited or unverifiable skills and newer installed versions. Limit install-time `--force` to recognized managed skills.
+- Add read-only `skill status` with plain and JSON diagnostics. Keep maintenance notices on stderr.
+- Exclude local source and editable builds from automatic synchronization. Custom skill directories require explicit updates.
+
 ## 0.1.1
 
 - Give explicit exports a one-command skill fast path without routine capability checks, source inspection, or visual review.

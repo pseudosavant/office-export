@@ -7,7 +7,7 @@ This repository contains `office-export`, a Windows-first Python CLI that export
 - Published package name: `office-export`
 - CLI command: `office-export`
 - Python package import: `office_export`
-- Current release: `0.1.0`
+- Current release: `0.2.0`
 
 ## Working conventions
 

@@ -79,8 +79,7 @@ jobs:
         run: |
           python -m venv .wheel-smoke
           .wheel-smoke/bin/python -m pip install dist/*.whl
-          .wheel-smoke/bin/office-export --version
-          .wheel-smoke/bin/office-export formats --json
+          .wheel-smoke/bin/python tests/wheel_smoke.py
 
       - name: Upload distributions
         uses: actions/upload-artifact@v7

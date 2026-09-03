@@ -180,13 +180,23 @@ Install the bundled managed skill:
 
 ```powershell
 uvx office-export skill install
+uvx office-export skill status --json
+uvx office-export skill install --force
 uvx office-export skill install --skills-dir C:\custom\skills
 uvx office-export skill remove
 ```
 
-The default target is `~/.agents/skills/office-export/SKILL.md`. Installation is idempotent and updates stale managed content. Installation and removal refuse unmanaged content unless `--force` is explicitly supplied.
+The default target is `~/.agents/skills/office-export/SKILL.md`. Normally installed CLIs automatically synchronize an already-installed managed skill when its version is older and its content is intact. The running CLI version is the authority. Equal or newer skills are left alone. Missing skills are never installed automatically. This maintenance is local. It does not query package indexes, refresh uv caches, or update the CLI.
 
-The skill teaches agents to run diagnostics, inspect before selecting, export with JSON, review representative images, report exact paths and warnings, and preserve safe defaults.
+Management metadata lives in the supported YAML `metadata` mapping: `managed-by: office-export`, a quoted `managed-version`, and `managed-content-sha256: "sha256:<digest>"`. The hash covers the complete UTF-8 skill with LF line endings and the hash value replaced by `""`. It detects edits, including metadata and formatting changes. It is not a signature. Legacy HTML markers remain recognized. Managed skills with missing or invalid versions receive a fresh replacement as a recovery step.
+
+Modified skills and skills with valid versions but missing or invalid hashes are preserved. To replace managed content explicitly, run `uvx office-export skill install --force`. Installation never overwrites an unmanaged skill, even with `--force`, and never downgrades a newer skill. Removal refuses unmanaged content and extra directory entries unless its existing `--force` override is supplied.
+
+`skill status` reports the path, ownership, CLI and installed versions, version comparison, integrity, and automatic synchronization eligibility. Add `--json` for structured output. Skill commands do not trigger automatic synchronization. Update notices and maintenance warnings go to stderr, so normal JSON stdout stays unchanged.
+
+Only the standard directory participates in automatic synchronization. Custom locations require explicit updates with `skill install --skills-dir PATH`. Local checkouts, local source installations, and editable builds skip automatic synchronization. An installed wheel remains eligible. Explicit installation still works during development with `uvx --from . office-export skill install`.
+
+Updates affect future agent skill loading. They may not change instructions already loaded into a running agent session. The skill continues to teach invocation through `uvx office-export`, direct exports for explicit requests, conditional discovery and visual review, and safe source handling.
 
 ## Safety model
 

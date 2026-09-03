@@ -13,7 +13,7 @@ from office_export.doctor import run_doctor
 from office_export.errors import EXIT_INTERNAL, OfficeExportError, UsageError
 from office_export.naming import ensure_distinct_paths
 from office_export.results import SCHEMA_VERSION, base_result, write_manifest
-from office_export.skill import install_skill, remove_skill
+from office_export.skill import install_skill, remove_skill, skill_status, synchronize_skill
 
 PROGRAM_NAME = "office-export"
 
@@ -36,6 +36,7 @@ Usage:
   {PROGRAM_NAME} batch PATH --to pdf|png|jpeg [OPTIONS]
   {PROGRAM_NAME} skill install [--skills-dir DIR] [--force] [--json]
   {PROGRAM_NAME} skill remove [--skills-dir DIR] [--force] [--json]
+  {PROGRAM_NAME} skill status [--skills-dir DIR] [--json]
 
 Examples:
   {PROGRAM_NAME} report.docx --to pdf
@@ -44,6 +45,7 @@ Examples:
   {PROGRAM_NAME} document.pdf --to png --pages 1-4
 
 Run `{PROGRAM_NAME} INPUT --to FORMAT --help` for export options.
+Run `{PROGRAM_NAME} skill --help` for managed skill synchronization and force options.
 """
 
 
@@ -153,6 +155,9 @@ def main(
     json_mode = "--json" in args
     verbose = "--verbose" in args
     try:
+        if args and args[0] == "skill":
+            return _run_skill(args[1:], stdout=stdout)
+        synchronize_skill(stderr=stderr)
         if not args:
             stdout.write(build_root_help())
             return 0
@@ -165,8 +170,6 @@ def main(
         if args[0] in {"-h", "--help"}:
             stdout.write(build_root_help())
             return 0
-        if args[0] == "skill":
-            return _run_skill(args[1:], stdout=stdout)
         if args[0] == "inspect":
             return _run_inspect(args[1:], stdout=stdout)
         if args[0] == "doctor":
@@ -206,27 +209,55 @@ def main(
 
 
 def _run_skill(args: list[str], *, stdout: TextIO) -> int:
-    if not args or args[0] in {"-h", "--help"}:
+    if not args or "--help" in args or "-h" in args:
         stdout.write(
             f"Usage:\n  {PROGRAM_NAME} skill install [--skills-dir DIR] [--force] [--json]\n"
             f"  {PROGRAM_NAME} skill remove [--skills-dir DIR] [--force] [--json]\n"
+            f"  {PROGRAM_NAME} skill status [--skills-dir DIR] [--json]\n\n"
+            "Install creates a missing skill or updates an older pristine managed skill.\n"
+            "Install --force replaces altered managed content. It never overwrites an unmanaged skill.\n"
+            "Remove --force permits removal of unmanaged content and extra directory entries.\n"
+            "Status reports version, integrity, and automatic synchronization eligibility without writing.\n\n"
+            "Normally installed CLIs synchronize older pristine skills in ~/.agents/skills/office-export.\n"
+            "The running CLI version is authoritative. Modified or unverifiable skills are preserved.\n"
+            "Missing skills are never installed automatically. Local and editable builds skip synchronization.\n"
+            "Custom directories require explicit installation updates. No CLI or uv cache updates occur.\n"
+            "Updates affect future skill loading. A running agent may retain instructions already loaded.\n"
         )
         return 0
     parser = CliArgumentParser(prog=f"{PROGRAM_NAME} skill", add_help=False)
-    parser.add_argument("action", choices=("install", "remove"))
+    parser.add_argument("action", choices=("install", "remove", "status"))
     parser.add_argument("--skills-dir", type=Path)
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--json", action="store_true")
     parsed = parser.parse_args(args)
     root = parsed.skills_dir.expanduser().resolve() if parsed.skills_dir else None
-    result = (
-        install_skill(root, force=parsed.force)
-        if parsed.action == "install"
-        else remove_skill(root, force=parsed.force)
-    )
+    if parsed.action == "status":
+        if parsed.force:
+            raise UsageError("--force applies to skill install and remove only.")
+        result = skill_status(root)
+    elif parsed.action == "install":
+        result = install_skill(root, force=parsed.force)
+    else:
+        result = remove_skill(root, force=parsed.force)
     payload = {"ok": True, "schema_version": SCHEMA_VERSION, "mode": f"skill_{parsed.action}", **result}
     if parsed.json:
         stdout.write(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    elif parsed.action == "status":
+        stdout.write(
+            f"Skill: {result['path']}\n"
+            f"Standard location: {result['standard_location']}\n"
+            f"Installed: {result['installed']}\nManaged: {result['managed']}\n"
+            f"CLI version: {result['cli_version']}\n"
+            f"Installed version: {result['installed_version'] or 'unknown'}\n"
+            f"Version relation: {result['version_relation'] or 'not applicable'}\n"
+            f"Integrity: {result['integrity']}\nLocal development: {result['local_development']}\n"
+            f"Automatic synchronization eligible: {result['auto_sync_eligible']}\n"
+        )
+        if result["auto_sync_skip_reason"]:
+            stdout.write(f"Synchronization skipped: {result['auto_sync_skip_reason']}\n")
+        if result["force_command"]:
+            stdout.write(f"To replace managed content: {result['force_command']}\n")
     else:
         verb = "Installed" if parsed.action == "install" else "Removed"
         if parsed.action == "remove" and not result["removed"]:
