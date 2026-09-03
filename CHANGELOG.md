@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Give explicit exports a one-command skill fast path without routine capability checks, source inspection, or visual review.
+- Make discovery, retries, and visual validation conditional on the request or a structured failure.
+
 ## 0.1.0
 
 - Export Word, Excel, and PowerPoint documents through desktop Microsoft Office on Windows.

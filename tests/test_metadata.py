@@ -12,7 +12,7 @@ def test_package_metadata_is_consistent() -> None:
     project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
 
     assert project["name"] == "office-export"
-    assert project["version"] == __version__ == "0.1.0"
+    assert project["version"] == __version__ == "0.1.1"
     assert project["scripts"]["office-export"] == "office_export.cli:main"
     assert project["license"] == "MIT"
 

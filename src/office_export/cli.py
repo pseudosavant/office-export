@@ -332,7 +332,7 @@ def _run_batch(args: list[str], *, stdout: TextIO) -> int:
     parser.add_argument("--json", action="store_true")
     parsed = parser.parse_args(args)
     if parsed.jobs != 1:
-        raise UsageError("Version 0.1.0 supports only --jobs 1.")
+        raise UsageError("Only --jobs 1 is currently supported.")
     sources = _batch_sources(parsed.path, recursive=parsed.recursive)
     output_root = parsed.output_dir.expanduser().resolve() if parsed.output_dir else None
     if output_root:

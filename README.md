@@ -120,7 +120,7 @@ uvx office-export document.pdf --to jpeg --pages 1,3-5 --dpi 300
 uvx office-export document.pdf --to png --exclude-annotations
 ```
 
-PDF input supports PNG and JPEG output in version 0.1.0. PDF-to-PDF rewriting is not supported. Physical page selectors are one-based. `inspect` also reports page labels when the PDF contains them.
+PDF input supports PNG and JPEG output. PDF-to-PDF rewriting is not supported. Physical page selectors are one-based. `inspect` also reports page labels when the PDF contains them.
 
 Visible annotations and standard form appearances are rendered by default. `--exclude-annotations` also excludes form widget appearances. Dynamic XFA content produces a warning. Password-protected, encrypted, or permission-restricted PDFs are rejected.
 
@@ -172,7 +172,7 @@ uvx office-export batch .\incoming --to pdf
 uvx office-export batch .\incoming --to png --recursive --continue-on-error --json
 ```
 
-Version 0.1.0 processes files sequentially and accepts only `--jobs 1`. Each Office source gets a fresh worker process and an isolated temporary directory.
+Batch conversion currently processes files sequentially and accepts only `--jobs 1`. Each Office source gets a fresh worker process and an isolated temporary directory.
 
 ## Agent skill
 
